@@ -399,32 +399,33 @@ fn select_squares(
                     min_threshold
                 );
 
-                if dynamic_threshold >= min_threshold {
-                    // 计算EV值并输出日志
-                    let mut positive_ev_count = 0;
-                    info!("📈 格子 EV 值分析:");
-                    for (idx, deployment_sol) in &selected_candidates {
-                        let ev_value = (amount_sol / (deployment_sol + amount_sol)) * 0.95 - (amount_sol * 20.0 / 0.8);
-                        if ev_value > 0.0 {
-                            positive_ev_count += 1;
-                            info!(
-                                "  格子 #{}: EV = {:.6} SOL ✅",
-                                idx, ev_value
-                            );
-                        } else {
-                            info!(
-                                "  格子 #{}: EV = {:.6} SOL",
-                                idx, ev_value
-                            );
-                        }
+                // 计算EV值并输出日志（无论条件是否满足都输出）
+                let mut positive_ev_count = 0;
+                info!("📈 格子 EV 值分析:");
+                for (idx, deployment_sol) in &selected_candidates {
+                    let ev_value = (amount_sol / (deployment_sol + amount_sol)) * 0.95 - (amount_sol * 20.0 / 0.8);
+                    if ev_value > 0.0 {
+                        positive_ev_count += 1;
+                        info!(
+                            "  格子 #{}: EV = {:.6} SOL ✅",
+                            idx, ev_value
+                        );
+                    } else {
+                        info!(
+                            "  格子 #{}: EV = {:.6} SOL",
+                            idx, ev_value
+                        );
                     }
+                }
 
-                    info!(
-                        "✅ {} / {} 个格子的 EV 值 > 0",
-                        positive_ev_count,
-                        selected_candidates.len()
-                    );
+                info!(
+                    "✅ {} / {} 个格子的 EV 值 > 0",
+                    positive_ev_count,
+                    selected_candidates.len()
+                );
 
+                if dynamic_threshold >= min_threshold {
+                    info!("✨ 满足部署条件，将进行部署");
                     let picked: Vec<usize> = selected_candidates
                         .into_iter()
                         .map(|(idx, _)| idx)
