@@ -60,6 +60,10 @@ enum Commands {
         #[arg(long, default_value = "20")]
         pick_squares: usize,
 
+        /// EV阈值系数（0-1之间，默认0.95）
+        #[arg(long, default_value = "0.95")]
+        ev_threshold: f64,
+
         /// 提前部署时间（秒）
         #[arg(long, default_value = "40.0")]
         start_before_seconds: f64,
@@ -135,6 +139,7 @@ async fn main() -> Result<(), anyhow::Error> {
             threshold_sol,
             min_squares,
             pick_squares,
+            ev_threshold,
             start_before_seconds,
             remaining_slots,
         } => {
@@ -146,6 +151,7 @@ async fn main() -> Result<(), anyhow::Error> {
                     amount_sol,
                     min_squares,
                     pick_squares,
+                    ev_threshold,
                     start_before_seconds,
                     remaining_slots,
                 },
@@ -199,6 +205,7 @@ enum MiningStrategy {
         amount_sol: f64,
         min_squares: usize,
         pick_squares: usize,
+        ev_threshold: f64,
         start_before_seconds: f64,
         remaining_slots: u64,
     },
@@ -334,6 +341,7 @@ fn select_squares(
             amount_sol,
             min_squares,
             pick_squares,
+            ev_threshold,
             ..
         } => {
             let mut candidates: Vec<(usize, f64)> = all_squares
@@ -377,7 +385,7 @@ fn select_squares(
 
                 // 计算部署动态阈值
                 let dynamic_threshold = if median_deployment + amount_sol > 0.0 {
-                    ((amount_sol / (median_deployment + amount_sol)) * total_deployed_sol) * 0.95
+                    ((amount_sol / (median_deployment + amount_sol)) * total_deployed_sol) * ev_threshold
                 } else {
                     0.0
                 };
@@ -401,9 +409,9 @@ fn select_squares(
 
                 // 计算EV值并输出日志（无论条件是否满足都输出）
                 let mut positive_ev_count = 0;
-                info!("📈 格子 EV 值分析:");
+                info!("📈 格子 EV 值分析 (EV阈值系数: {:.4}):", ev_threshold);
                 for (idx, deployment_sol) in &selected_candidates {
-                    let ev_value = (amount_sol / (deployment_sol + amount_sol)) * 0.95 - (amount_sol * 20.0 / 0.8);
+                    let ev_value = (amount_sol / (deployment_sol + amount_sol)) * ev_threshold - (amount_sol * 20.0 / 0.8);
                     if ev_value > 0.0 {
                         positive_ev_count += 1;
                         info!(
