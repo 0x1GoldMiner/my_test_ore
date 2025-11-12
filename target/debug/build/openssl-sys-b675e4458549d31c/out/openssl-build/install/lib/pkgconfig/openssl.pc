@@ -1,0 +1,9 @@
+prefix=/home/user/my_test_ore/target/debug/build/openssl-sys-b675e4458549d31c/out/openssl-build/install
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include 
+
+Name: OpenSSL
+Description: Secure Sockets Layer and cryptography libraries and tools
+Version: 3.5.4
+Requires: libssl libcrypto

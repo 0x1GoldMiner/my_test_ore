@@ -1,0 +1,14 @@
+/home/user/my_test_ore/target/debug/deps/uriparse-16cebf8d92a7b781.d: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/utility.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/authority.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/fragment.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/path.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/query.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/relative_reference.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/scheme.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/uri.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/uri_reference.rs
+
+/home/user/my_test_ore/target/debug/deps/liburiparse-16cebf8d92a7b781.rmeta: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/utility.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/authority.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/fragment.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/path.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/query.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/relative_reference.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/scheme.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/uri.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/uri_reference.rs
+
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/lib.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/utility.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/authority.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/fragment.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/path.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/query.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/relative_reference.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/scheme.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/uri.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/uriparse-0.6.4/src/uri_reference.rs:

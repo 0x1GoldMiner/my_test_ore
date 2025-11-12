@@ -1,0 +1,10 @@
+/home/user/my_test_ore/target/debug/deps/solana_rpc_client_types-5889d2c224f25a23.d: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/config.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/error_object.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/filter.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/request.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/response.rs
+
+/home/user/my_test_ore/target/debug/deps/libsolana_rpc_client_types-5889d2c224f25a23.rmeta: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/config.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/error_object.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/filter.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/request.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/response.rs
+
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/lib.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/config.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/error_object.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/filter.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/request.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-rpc-client-types-2.3.13/src/response.rs:
