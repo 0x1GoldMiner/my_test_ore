@@ -44,9 +44,13 @@ struct Cli {
 enum Commands {
     /// 自动挖矿（阈值算法）
     AutoThreshold {
-        /// 每个格子部署的 SOL 数量
-        #[arg(long, default_value = "0.01")]
-        amount_sol: f64,
+        /// 每个格子部署的 SOL 数量范围 (格式: min_sol,max_sol)
+        #[arg(long)]
+        amount_sol: String,
+
+        /// SOL增量单位（每次增加的步长）
+        #[arg(long, default_value = "0.001")]
+        sol_add_unit: f64,
 
         /// 阈值（SOL）
         #[arg(long, default_value = "0.01")]
@@ -136,6 +140,7 @@ async fn main() -> Result<(), anyhow::Error> {
     match cli.command {
         Commands::AutoThreshold {
             amount_sol,
+            sol_add_unit,
             threshold_sol,
             min_squares,
             pick_squares,
@@ -143,12 +148,32 @@ async fn main() -> Result<(), anyhow::Error> {
             start_before_seconds,
             remaining_slots,
         } => {
+            // 解析 amount_sol 字符串 (格式: min_sol,max_sol)
+            let parts: Vec<&str> = amount_sol.split(',').collect();
+            if parts.len() != 2 {
+                return Err(anyhow::anyhow!("amount_sol 格式错误，应为: min_sol,max_sol (例: 0.001,0.05)"));
+            }
+            let amount_sol_min: f64 = parts[0].parse()
+                .map_err(|_| anyhow::anyhow!("无法解析 min_sol: {}", parts[0]))?;
+            let amount_sol_max: f64 = parts[1].parse()
+                .map_err(|_| anyhow::anyhow!("无法解析 max_sol: {}", parts[1]))?;
+
+            if amount_sol_min > amount_sol_max {
+                return Err(anyhow::anyhow!("amount_sol 范围错误：min_sol 不能大于 max_sol"));
+            }
+
+            if sol_add_unit <= 0.0 {
+                return Err(anyhow::anyhow!("sol_add_unit 必须大于 0"));
+            }
+
             auto_mine_optimized(
                 rpc,
                 payer,
                 MiningStrategy::Threshold {
                     threshold_sol,
-                    amount_sol,
+                    amount_sol_min,
+                    amount_sol_max,
+                    sol_add_unit,
                     min_squares,
                     pick_squares,
                     ev_threshold,
@@ -202,7 +227,9 @@ async fn main() -> Result<(), anyhow::Error> {
 enum MiningStrategy {
     Threshold {
         threshold_sol: f64,
-        amount_sol: f64,
+        amount_sol_min: f64,
+        amount_sol_max: f64,
+        sol_add_unit: f64,
         min_squares: usize,
         pick_squares: usize,
         ev_threshold: f64,
@@ -288,15 +315,11 @@ async fn auto_mine_optimized(
                     // 选择格子
                     let selected = select_squares(&round, &strategy)?;
 
-                    if let Some(squares_to_deploy) = selected {
+                    if let Some((squares_to_deploy, amount_sol)) = selected {
                         info!("🎯 选中格子: {:?}", squares_to_deploy);
+                        info!("💰 使用部署 SOL: {:.6} SOL", amount_sol);
 
                         // 部署（双渠道提交）
-                        let amount_sol = match &strategy {
-                            MiningStrategy::Threshold { amount_sol, .. }
-                            | MiningStrategy::Optimized { amount_sol, .. } => *amount_sol,
-                        };
-
                         deploy_with_dual_channel(
                             &rpc,
                             &payer,
@@ -324,10 +347,11 @@ async fn auto_mine_optimized(
 }
 
 /// 选择格子（根据策略）
+/// 返回 (选中的格子列表, 使用的amount_sol)
 fn select_squares(
     round: &Round,
     strategy: &MiningStrategy,
-) -> Result<Option<Vec<usize>>, anyhow::Error> {
+) -> Result<Option<(Vec<usize>, f64)>, anyhow::Error> {
     let all_squares: Vec<(usize, f64)> = round
         .deployed
         .iter()
@@ -338,7 +362,9 @@ fn select_squares(
     match strategy {
         MiningStrategy::Threshold {
             threshold_sol,
-            amount_sol,
+            amount_sol_min,
+            amount_sol_max,
+            sol_add_unit,
             min_squares,
             pick_squares,
             ev_threshold,
@@ -383,16 +409,6 @@ fn select_squares(
                 let total_deployed_lamports: u64 = round.deployed.iter().sum();
                 let total_deployed_sol = lamports_to_sol(total_deployed_lamports);
 
-                // 计算部署动态阈值
-                let dynamic_threshold = if median_deployment + amount_sol > 0.0 {
-                    ((amount_sol / (median_deployment + amount_sol)) * total_deployed_sol) * ev_threshold
-                } else {
-                    0.0
-                };
-
-                // 判断条件：部署动态阈值 >= (部署的sol*20)/0.8
-                let min_threshold = (amount_sol * 20.0) / 0.8;
-
                 info!(
                     "💎 部署中位数: {:.6} SOL",
                     median_deployment
@@ -401,57 +417,91 @@ fn select_squares(
                     "📊 部署总数: {:.6} SOL",
                     total_deployed_sol
                 );
-                info!(
-                    "⚡ 部署动态阈值: {:.6} SOL (需要达到: {:.6} SOL)",
-                    dynamic_threshold,
-                    min_threshold
-                );
 
-                // 计算EV值并输出日志（无论条件是否满足都输出）
-                let mut positive_ev_count = 0;
-                info!("📈 格子 EV 值分析 (EV阈值系数: {:.4}):", ev_threshold);
-                for (idx, deployment_sol) in &selected_candidates {
-                    let ev_value = (amount_sol / (deployment_sol + amount_sol)) * ev_threshold - (amount_sol * 20.0 / 0.8);
-                    if ev_value > 0.0 {
-                        positive_ev_count += 1;
+                // 动态搜索最优的 amount_sol
+                info!("🔍 开始搜索最优部署 SOL (范围: {:.6}-{:.6}, 步长: {:.6})",
+                      amount_sol_max, amount_sol_min, sol_add_unit);
+
+                // 从最大值开始向最小值搜索
+                let mut current_amount_sol = *amount_sol_max;
+
+                while current_amount_sol >= *amount_sol_min - 1e-9 {  // 考虑浮点数精度
+                    // 计算当前 amount_sol 的动态阈值
+                    let dynamic_threshold = if median_deployment + current_amount_sol > 0.0 {
+                        ((current_amount_sol / (median_deployment + current_amount_sol)) * total_deployed_sol) * ev_threshold
+                    } else {
+                        0.0
+                    };
+
+                    // 判断条件：部署动态阈值 >= (部署的sol*20)/0.8
+                    let min_threshold = (current_amount_sol * 20.0) / 0.8;
+
+                    if dynamic_threshold >= min_threshold {
+                        // 找到最优的 amount_sol
                         info!(
-                            "  格子 #{}: EV = {:.6} SOL ✅",
-                            idx, ev_value
+                            "✨ 找到最优部署 SOL: {:.6} SOL",
+                            current_amount_sol
                         );
+                        info!(
+                            "⚡ 部署动态阈值: {:.6} SOL (需要达到: {:.6} SOL) - ✅ 满足条件",
+                            dynamic_threshold,
+                            min_threshold
+                        );
+
+                        // 计算EV值并输出日志
+                        let mut positive_ev_count = 0;
+                        info!("📈 格子 EV 值分析 (EV阈值系数: {:.4}):", ev_threshold);
+                        for (idx, deployment_sol) in &selected_candidates {
+                            let ev_value = (current_amount_sol / (deployment_sol + current_amount_sol)) * ev_threshold - (current_amount_sol * 20.0 / 0.8);
+                            if ev_value > 0.0 {
+                                positive_ev_count += 1;
+                                info!(
+                                    "  格子 #{}: EV = {:.6} SOL ✅",
+                                    idx, ev_value
+                                );
+                            } else {
+                                info!(
+                                    "  格子 #{}: EV = {:.6} SOL",
+                                    idx, ev_value
+                                );
+                            }
+                        }
+
+                        info!(
+                            "✅ {} / {} 个格子的 EV 值 > 0",
+                            positive_ev_count,
+                            selected_candidates.len()
+                        );
+
+                        let picked: Vec<usize> = selected_candidates
+                            .into_iter()
+                            .map(|(idx, _)| idx)
+                            .collect();
+                        return Ok(Some((picked, current_amount_sol)));
                     } else {
                         info!(
-                            "  格子 #{}: EV = {:.6} SOL",
-                            idx, ev_value
+                            "🔄 当前设定部署 SOL: {:.6} SOL，部署动态阈值: {:.6} SOL，因为小于 {:.6} SOL，不满足条件",
+                            current_amount_sol,
+                            dynamic_threshold,
+                            min_threshold
                         );
                     }
+
+                    // 减少 amount_sol，继续搜索
+                    current_amount_sol -= sol_add_unit;
                 }
 
+                // 没有找到最优值
                 info!(
-                    "✅ {} / {} 个格子的 EV 值 > 0",
-                    positive_ev_count,
-                    selected_candidates.len()
+                    "⛔ 没有找到满足条件的最优部署 SOL，放弃本轮部署"
                 );
-
-                if dynamic_threshold >= min_threshold {
-                    info!("✨ 满足部署条件，将进行部署");
-                    let picked: Vec<usize> = selected_candidates
-                        .into_iter()
-                        .map(|(idx, _)| idx)
-                        .collect();
-                    Ok(Some(picked))
-                } else {
-                    info!(
-                        "⛔ 部署动态阈值 ({:.6} SOL) 小于最小要求 ({:.6} SOL)，放弃本轮部署",
-                        dynamic_threshold,
-                        min_threshold
-                    );
-                    Ok(None)
-                }
+                Ok(None)
             } else {
                 Ok(None)
             }
         }
         MiningStrategy::Optimized {
+            amount_sol,
             min_squares,
             pick_squares,
             ..
@@ -477,7 +527,7 @@ fn select_squares(
                     .take(*pick_squares)
                     .map(|(idx, _)| idx)
                     .collect();
-                Ok(Some(picked))
+                Ok(Some((picked, *amount_sol)))
             } else {
                 Ok(None)
             }
