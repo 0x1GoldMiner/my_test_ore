@@ -1,6 +1,7 @@
 mod jito;
 mod monitor;
 mod price;
+mod stats;
 mod utils;
 
 use clap::{Parser, Subcommand};
@@ -20,6 +21,7 @@ use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
 use utils::*;
+use stats::RewardDatabase;
 
 const DEFAULT_UNITS: u64 = 400_000;
 
@@ -262,9 +264,18 @@ async fn auto_mine_optimized(
 
     let mut last_round_id = 0u64;
 
+    // 初始化奖励数据库
+    let mut reward_db = RewardDatabase::load_or_create("reward.json");
+
     // 获取初始价格
     let (ore_price, sol_price) = get_price_with_retry(3).await?;
     info!("💰 当前价格 - ORE: ${:.4}, SOL: ${:.2}", ore_price, sol_price);
+
+    // 获取初始快照
+    let initial_snapshot = monitor.get_snapshot().await;
+    let mut prev_miner = initial_snapshot.miner.clone();
+    let mut prev_deployed_sol = 0.0;
+    last_round_id = initial_snapshot.board.round_id;
 
     loop {
         // 获取实时状态快照
@@ -272,7 +283,55 @@ async fn auto_mine_optimized(
 
         // 检测新轮次
         if snapshot.board.round_id != last_round_id {
+            // 计算上一轮数据
+            let previous_round_id = last_round_id;
+            let previous_rewards_sol = lamports_to_sol(prev_miner.rewards_sol);
+            let previous_rewards_ore = amount_to_ui_amount(prev_miner.rewards_ore, TOKEN_DECIMALS);
+
+            let current_rewards_sol = lamports_to_sol(snapshot.miner.rewards_sol);
+            let current_rewards_ore = amount_to_ui_amount(snapshot.miner.rewards_ore, TOKEN_DECIMALS);
+
+            // 记录上一轮数据
+            let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+            let status = if prev_deployed_sol > 0.0 { "deployed".to_string() } else { "skipped".to_string() };
+            let is_success = current_rewards_sol > previous_rewards_sol;
+            let result = if prev_deployed_sol > 0.0 {
+                if is_success { "success".to_string() } else { "failure".to_string() }
+            } else {
+                "skipped".to_string()
+            };
+
+            reward_db.add_or_update_round(
+                previous_round_id,
+                timestamp.clone(),
+                status.clone(),
+                prev_deployed_sol,
+                current_rewards_sol - previous_rewards_sol,
+                current_rewards_ore - previous_rewards_ore,
+                result,
+            );
+
+            // 保存到JSON
+            if let Err(e) = reward_db.save("reward.json") {
+                warn!("Failed to save reward.json: {}", e);
+            }
+
+            // 输出轮次报告
+            let report = stats::generate_round_report(
+                &reward_db,
+                snapshot.board.round_id,
+                prev_deployed_sol,
+                previous_rewards_sol,
+                current_rewards_sol,
+                previous_rewards_ore,
+                current_rewards_ore,
+            );
+            info!("{}", report);
+
+            // 更新轮次ID和快照
             last_round_id = snapshot.board.round_id;
+            prev_miner = snapshot.miner.clone();
+            prev_deployed_sol = 0.0;
 
             info!("🆕 新轮次 #{}", snapshot.board.round_id);
             snapshot.log_status();
@@ -318,6 +377,9 @@ async fn auto_mine_optimized(
                     if let Some((squares_to_deploy, amount_sol)) = selected {
                         info!("🎯 选中格子: {:?}", squares_to_deploy);
                         info!("💰 使用部署 SOL: {:.6} SOL", amount_sol);
+
+                        // 记录本轮部署的SOL总额
+                        prev_deployed_sol = amount_sol * squares_to_deploy.len() as f64;
 
                         // 部署（双渠道提交）
                         deploy_with_dual_channel(
