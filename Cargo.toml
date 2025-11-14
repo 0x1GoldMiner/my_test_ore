@@ -54,6 +54,7 @@ clap = { version = "4.5.48", features = ["derive"] }
 rand = "0.8.5"
 futures-util = "0.3.31"
 tokio-tungstenite = "0.20.1"
+chrono = { version = "0.4", features = ["serde"] }
 
 # OpenSSL - Windows 编译支持
 # 使用 vendored 特性自动编译 OpenSSL，解决 Windows 依赖问题
