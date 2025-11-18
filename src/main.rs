@@ -67,6 +67,10 @@ enum Commands {
         /// 剩余 slots 阈值（更精确的时机控制）
         #[arg(long, default_value = "15")]
         remaining_slots: u64,
+
+        /// 最大部署 SOL 总量
+        #[arg(long, default_value = "0.5")]
+        max_total_amount_sol: f64,
     },
 
     /// 自动挖矿（最优化算法）
@@ -137,6 +141,7 @@ async fn main() -> Result<(), anyhow::Error> {
             pick_squares,
             start_before_seconds,
             remaining_slots,
+            max_total_amount_sol,
         } => {
             auto_mine_optimized(
                 rpc,
@@ -148,6 +153,7 @@ async fn main() -> Result<(), anyhow::Error> {
                     pick_squares,
                     start_before_seconds,
                     remaining_slots,
+                    max_total_amount_sol,
                 },
             )
             .await?;
@@ -201,6 +207,7 @@ enum MiningStrategy {
         pick_squares: usize,
         start_before_seconds: f64,
         remaining_slots: u64,
+        max_total_amount_sol: f64,
     },
     Optimized {
         amount_sol: f64,
@@ -333,16 +340,29 @@ fn select_squares(
             threshold_sol,
             min_squares,
             pick_squares,
+            max_total_amount_sol,
             ..
         } => {
+            // 首先检查总部署 SOL 是否超过限制
+            let total_deployed: u64 = round.deployed.iter().sum();
+            let total_sol = lamports_to_sol(total_deployed);
+
+            if total_sol > *max_total_amount_sol {
+                warn!(
+                    "⏭️ 跳过部署：当前sol总量 {:.6} SOL > 限制值 {:.6} SOL",
+                    total_sol, max_total_amount_sol
+                );
+                return Ok(None);
+            }
+
             let mut candidates: Vec<(usize, f64)> = all_squares
                 .into_iter()
                 .filter(|(_, v)| *v < *threshold_sol)
                 .collect();
 
             info!(
-                "📊 阈值算法 - 低于阈值 {:.4} SOL 的格子: {}",
-                threshold_sol,
+                "📊 阈值算法 - 总部署: {:.6} SOL (限制: {:.6} SOL), 低于阈值 {:.4} SOL 的格子: {}",
+                total_sol, max_total_amount_sol, threshold_sol,
                 candidates.len()
             );
 
