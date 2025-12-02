@@ -5,19 +5,22 @@
 ```
 🚨 SCAM ALERT: LODE mining project claims "Entropy VRF" for fair randomness.
 
-THE TRUTH:
-ENTROPY_PROGRAM_ID = "So11111111111111111111111111111111111111112"
+THE PROOF (constants.rs, line ~54):
+pub const ENTROPY_PROGRAM_ID: Pubkey =
+  pubkey!("So11111111111111111111111111111111111111112");
 
-This is Wrapped SOL token address, NOT a VRF provider.
+This is Wrapped SOL token, NOT a VRF provider.
 
-Real VRF: Switchboard (SW1TCH...), ORAO (VRFzZ...)
-LODE: Fake address
+Real VRF providers:
+✅ Switchboard: SW1TCH7qEPTdLsDHRgPuMQjbQxKdH2aBStViMFnt64f
+✅ ORAO: VRFzZoJdhFWL8rkvu87LpKM3RbcVezpMEc6X5GVDr7y
+❌ LODE: So111...112 (Wrapped SOL!)
 
-Evidence: github.com/lode-supply/lode-program/blob/ef4ca1e/programs/lode-program/src/constants.rs
+Code: github.com/lode-supply/lode-program/blob/ef4ca1e/programs/lode-program/src/constants.rs
 
-❌ Zero validation on randomness source
-❌ Admin can manipulate results
-❌ Clone of legitimate ORE project
+Verify Wrapped SOL: solscan.io/token/So11111111111111111111111111111111111111112
+
+Admin can manipulate all "random" results.
 
 DO NOT USE.
 ```
@@ -25,20 +28,24 @@ DO NOT USE.
 ## Option 2: Question Format (More Engaging)
 
 ```
-Question for LODE project developers:
+Question for LODE developers:
 
-Your code shows:
+constants.rs line 54:
 ENTROPY_PROGRAM_ID = "So11111111111111111111111111111111111111112"
 
-This is the Wrapped SOL token address.
+This is Wrapped SOL (verify: solscan.io/token/So111...112)
+
+Real VRF:
+- Switchboard: SW1TCH...
+- ORAO: VRFzZ...
 
 How is Wrapped SOL a VRF provider?
 
-Your set_var_address() has ZERO validation. Admin can point to any fake account and control "random" outcomes.
+Code: github.com/lode-supply/lode-program/blob/ef4ca1e/programs/lode-program/src/constants.rs
 
-Explain or admit this is a scam.
+Your set_var_address() has /// CHECK: No validation performed
 
-#Solana #CryptoScam
+Explain or this is fraud.
 ```
 
 ## Option 3: Warning Only (Shortest)
